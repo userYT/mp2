@@ -1,0 +1,66 @@
+User: (pasted PokeAPI notice) Sprites for the version group omega-ruby-alpha-sapphire will be moved from the path ../omegaruby-alphasapphire/.. to ../omega-ruby-alpha-sapphire/.. starting October 7th. — Has this been checked? Please make it fault-tolerant and compatible with both.
+
+Claude: (Searched the code, read sprites.ts, PokemonImage.tsx and pokemon.ts, and curl-tested both sprite paths: the old path returns 200, the new path returns 404, consistent with the notice.)
+
+I found one small gap. pickOrasSprite uses ?? to choose a key. If the old key exists but its front_default is null, the new key is never tried. I'd like to change it.
+
+User: (Rejected the edit) What do you mean?
+
+Claude: The code already supports both the old and new paths, and the logic is basically fine.
+
+Reading API data (sprites.ts:13-17): pickOrasSprite looks for omegaruby-alphasapphire first, then omega-ruby-alpha-sapphire. It works whichever key PokeAPI's JSON uses.
+Falling back when an image fails to load (PokemonImage.tsx:18-36): candidates are tried in order: original URL → URL with old/new path swapped → fallback image. onError on the <img> moves to the next candidate. After October 7, old URLs cached in localStorage will 404 and automatically swap to the new path, so there are no broken images. Likewise, if the new path is returned before it goes live, it swaps back to the old one.
+The small gap: if the old key exists but its front_default is null, the new key is never tried. I proposed:
+
+
+return gen6?.[OLD_KEY]?.front_default ?? gen6?.[NEW_KEY]?.front_default ?? null
+Should I apply it?
+
+User: What is front_default?
+
+Claude: front_default is a field in PokeAPI's JSON. Its value is the URL string of the Pokémon's default front-facing image. For Pikachu (/pokemon/25):
+
+
+"sprites": {
+  "front_default": "https://raw.githubusercontent.com/.../pokemon/25.png",
+  "versions": {
+    "generation-vi": {
+      "omegaruby-alphasapphire": {
+        "front_default": "https://raw.githubusercontent.com/.../generation-vi/omegaruby-alphasapphire/25.png",
+        "front_shiny": "...",
+        "back_default": "..."
+      }
+    }
+  }
+}
+The top-level sprites.front_default is the generic front sprite (front in pokemon.ts:59).
+versions → generation-vi → omegaruby-alphasapphire → front_default is the front sprite from the Omega Ruby / Alpha Sapphire games (oras).
+Sibling fields include back_default (back) and front_shiny (shiny).
+Some Pokémon or versions don't have the image. The value is then null, which is why the code uses ?? null.
+User: (Screenshot of the GitHub PR discussion about renaming the folder in the sprites repo.) Then let's make the change. Do I understand correctly: if the old key exists but front_default is empty, it won't try the new key, in case the old key hasn't expired but its contents have all become null? Are there any other possible changes? This is what the official discussion says.
+
+Claude: (Applied the edit at sprites.ts:15.)
+
+You're mostly right, with one correction. If the old key exists but holds null, the old code did not try the new key, so oras became null. That doesn't cause a broken image. The ORAS image block on the detail page just disappears (DetailView.tsx:121). A broken image is a different case: the URL has a value but the image 404s. That case is handled by the old/new path swap in PokemonImage.tsx. Both cases are now covered.
+
+After comparing with the PR discussion in your screenshot, three points affect us:
+
+The JSON key and the image folder change together. The PR requires each gen-vi group's key and sprites folder to match, so the API will likely switch from omegaruby-alphasapphire to omega-ruby-alpha-sapphire. We read both keys, so this is fine.
+The API and the sprites repo may be out of sync. The API PR is meant to merge after the sprites repo rename, but the two may go live at slightly different times. The API might return the new path while the repo still has the old folder, or the reverse. A failed image load automatically retries with the other path, so this is covered too.
+The localStorage cache holds old URLs. After October 7 those old URLs will 404 once, then retry on the new path. Images still display, at the cost of one failed request each time. To avoid that entirely, I can change CACHE_KEY in pokemon.ts:11 from pokedex-cache-v1 to v2 so users re-fetch the data. This is optional.
+I haven't run the page. I only used curl, before the change, to confirm that the old path returned 200 and the new path returned 404.
+
+User: Yes, please change it.
+
+Claude: (Changed CACHE_KEY to pokedex-cache-v2 in pokemon.ts:11.) The next time users open the page, the data is re-fetched from the API and the old image URLs from the v1 cache are no longer used. The old v1 cache stays in the browser unread and does no harm. I did not run the page or a type check.
+
+User: (Screenshot of the detail page with the Omega Ruby / Alpha Sapphire sprite boxed in red.) Is this the only part affected?
+
+Claude: Yes, the red box is the affected part: the "Omega Ruby / Alpha Sapphire" image in the Sprites section of the detail page. It's the only place in the project that uses this path, corresponding to current.sprites.oras in DetailView.tsx:121-130.
+
+Nothing else on the page is affected:
+
+The large image on the left uses official-artwork, whose path is unrelated to this rename.
+The small "Default" image uses the generic front_default, also unrelated.
+The list and gallery pages use those same two image types and never touch the ORAS path.
+If neither ORAS path loads, the red-box image becomes a "?" placeholder. If neither key has a front_default in the API, the whole block is hidden and only the "Default" image remains.
