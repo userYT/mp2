@@ -38,7 +38,7 @@ export default function DetailView() {
   const name = displayName(current.name)
 
   return (
-    <section className={styles.panel}>
+    <section className={styles.page}>
       <div className={styles.nav}>
         <Link
           to={`/pokemon/${prevId}`}
@@ -61,37 +61,43 @@ export default function DetailView() {
         </Link>
       </div>
 
-      <div className={styles.heading}>
-        <h1 className={styles.name}>{name}</h1>
-        <span className={styles.id}>{formatId(current.id)}</span>
-      </div>
+      <article className={styles.card}>
+        <div className={styles.inner}>
+          <header className={styles.top}>
+            <div className={styles.title}>
+              <h1 className={styles.name}>{name}</h1>
+              <span className={styles.id}>{formatId(current.id)}</span>
+            </div>
+            <div className={styles.hp}>
+              <span className={styles.hpLabel}>HP</span>
+              <span className={styles.hpValue}>{current.stats.hp}</span>
+            </div>
+          </header>
 
-      <div className={styles.types}>
-        {current.types.map((t) => (
-          <TypeBadge key={t} type={t} />
-        ))}
-      </div>
+          <div className={styles.types}>
+            {current.types.map((t) => (
+              <TypeBadge key={t} type={t} />
+            ))}
+          </div>
 
-      <div className={styles.layout}>
-        <div className={styles.hero}>
-          <PokemonImage
-            src={current.sprites.artwork}
-            fallback={current.sprites.front}
-            alt={name}
-          />
-        </div>
+          <div className={styles.art}>
+            <PokemonImage
+              src={current.sprites.artwork}
+              fallback={current.sprites.front}
+              alt={name}
+            />
+          </div>
 
-        <div>
-          <dl className={styles.facts}>
-            <div className={styles.fact}>
+          <dl className={styles.ribbon}>
+            <div>
               <dt>Height</dt>
               <dd>{formatMeters(current.height)}</dd>
             </div>
-            <div className={styles.fact}>
+            <div>
               <dt>Weight</dt>
               <dd>{formatKg(current.weight)}</dd>
             </div>
-            <div className={styles.fact}>
+            <div>
               <dt>Base EXP</dt>
               <dd>{current.baseExperience}</dd>
             </div>
@@ -107,18 +113,20 @@ export default function DetailView() {
           </ul>
 
           <h2 className={styles.section}>Base stats</h2>
-          {STAT_ROWS.map(({ label, key }) => (
-            <div key={key} className={styles.stat}>
-              <span>{label}</span>
-              <span>{current.stats[key]}</span>
-              <progress
-                className={styles.bar}
-                max={255}
-                value={current.stats[key]}
-                aria-label={label}
-              />
-            </div>
-          ))}
+          <div className={styles.stats}>
+            {STAT_ROWS.map(({ label, key }) => (
+              <div key={key} className={styles.stat}>
+                <span>{label}</span>
+                <span className={styles.statValue}>{current.stats[key]}</span>
+                <progress
+                  className={styles.bar}
+                  max={255}
+                  value={current.stats[key]}
+                  aria-label={label}
+                />
+              </div>
+            ))}
+          </div>
 
           <h2 className={styles.section}>Sprites</h2>
           <div className={styles.sprites}>
@@ -141,7 +149,7 @@ export default function DetailView() {
             )}
           </div>
         </div>
-      </div>
+      </article>
     </section>
   )
 }
