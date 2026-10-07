@@ -79,10 +79,8 @@ export default function ListView() {
   if (loading) return <StatusMessage kind="loading" message="Loading Pokemon..." />
   if (error) return <StatusMessage kind="error" message={error} onRetry={reload} />
 
-  const searching = query.trim() !== ''
-
   return (
-    <section className={searching ? styles.page : `${styles.page} ${styles.idle}`}>
+    <section className={styles.page}>
       <div className={styles.panel}>
         <input
           type="search"
@@ -131,15 +129,13 @@ export default function ListView() {
         </div>
       </div>
 
-      {searching && (
-        <p className={styles.count}>
-          {visible.length} of {pokemon.length}
-        </p>
-      )}
+      <p className={styles.count}>
+        {visible.length} of {pokemon.length}
+      </p>
 
-      {searching && visible.length === 0 ? (
+      {visible.length === 0 ? (
         <StatusMessage kind="empty" message="No Pokemon match your search." />
-      ) : searching ? (
+      ) : (
         <ul className={styles.list}>
           {visible.map((p) => (
             <li key={p.id}>
@@ -169,7 +165,7 @@ export default function ListView() {
             </li>
           ))}
         </ul>
-      ) : null}
+      )}
     </section>
   )
 }
