@@ -1,3 +1,85 @@
+Log 1:
+
+User: I need to pick an API for MP2 and I'm thinking about PokeAPI. What attributes does it actually have? I don't want to start designing before I know what data I can use.
+
+Claude: PokeAPI is a good fit, because it has a lot of structured data and a lot of images. There are two levels, and the difference matters for your design.
+
+List endpoint (/pokemon?limit=151) returns only:
+
+name
+url, which points to the detail endpoint
+It has no images, types or stats. That is the main constraint on your design.
+
+Detail endpoint (/pokemon/25) is where the useful data is:
+
+id, name
+height, weight, base_experience
+types, an array of 1–2 entries, such as electric
+abilities, an array that includes hidden abilities
+stats, six values: HP, Attack, Defense, Sp. Atk, Sp. Def, Speed
+sprites, with front_default, back_default, front_shiny and other["official-artwork"], plus per-game images under versions
+moves, species, game_indices and more
+Before we go further, which parts of the assignment are you trying to satisfy? Look at the README grading breakdown, because it should decide which fields matter.
+
+User: (Selected the Gallery View, List View and Details View items in README.md.) OK so there are three views: list, gallery, detail. The list needs search and sort, and the gallery needs a filter. So from what you listed, I think sort could use height, weight and base_experience because they're numbers. And the gallery filter could be types. Does that make sense?
+
+Claude: Yes, that matches how the data is shaped. Here is why each choice works:
+
+Sort needs a field every item has, and one that is comparable. height, weight and base_experience are plain numbers, so they sort easily. You can also add id and name, and some stats values like HP, Attack and Speed. That gives you about 8 sort properties, which is plenty.
+A gallery filter needs a field with a small set of discrete values. types has 18 possible values, so it works well. height doesn't work as a filter because it has too many distinct values.
+One design question to decide now. A Pokémon can have two types, for example Bulbasaur is grass and poison. If a user selects both "grass" and "fire", should the gallery show Pokémon with either type or with both? What do you think?
+User: Hmm. Either would be useful I guess. Maybe I can let the user choose? Like a toggle.
+
+Claude: That works, and it's a nice touch. Make it an "any / all" match toggle next to the type buttons. Allow multi-select, so users can pick several types, and update the grid immediately when anything changes, so the filter visibly does something. That will help with the "does clicking a filter change results accordingly" item (8 points).
+
+You now have enough to sketch the list and gallery. Before the detail page, one more thing: what do you want the user to see when they click an item?
+
+User: I want to show the image, height, weight, abilities, and the stats. Maybe sprites too. But wait, the list endpoint doesn't have images, right? How do I show images in the gallery then?
+
+Claude: Good catch. That is the main technical problem with this API. There are three ways to deal with it:
+
+Fetch each Pokémon's detail endpoint. This costs 151 requests on the first load, one per Pokémon, but you get everything: images, types and stats.
+Build the image URL from the id, because sprites follow a predictable path. It's fast, but it won't give you types or stats, and you need those for sorting and filtering.
+Fetch all 151 details once and cache them in localStorage. The first load is slow and later loads are instant.
+Option 3 fits your design, because sorting by stats and filtering by type both need the detail data. I'd also add a loading state, an error state with a retry button, and an empty state, so the app never shows a blank page. Which option do you want?
+
+User: Option 3. But is there a risk with localStorage? Like if the API changes?
+
+Claude: Yes. If PokeAPI changes its data format, a user's old cached data would still be in the browser. Put a version in the cache key, for example pokedex-cache-v1. When your data format changes, bump it to v2 and every user re-fetches. It's one line and easy to forget, so add it from the start.
+
+User: OK. One more thing. For the detail page, can I add Previous and Next buttons? Like going to the next Pokémon without going back to the list.
+
+Claude: Yes. It's optional, but it makes the detail view feel connected to the rest of the app. One design decision comes first. If the user came from the list sorted by weight, should "Next" follow the weight order, or just go 1, 2, 3…?
+
+I'd suggest following the current list or gallery order, since that's what the user expects. Wrap around at the ends. And if someone opens /pokemon/25 directly with no list context, fall back to the plain 1–151 order.
+
+User: Yes, let's do that. Can you summarize the plan so I can start?
+
+Claude: Here is the plan from our discussion:
+
+Data
+
+Fetch 151 Pokémon details, cache them in localStorage under pokedex-cache-v1
+Show loading, error-with-retry and empty states
+List View (/)
+
+Search by name or number
+8 sort properties: ID, Name, Height, Weight, Base EXP, HP, Attack, Speed
+An ascending/descending toggle
+Gallery View (/gallery)
+
+A grid of official artwork, falling back to front_default
+18 multi-select type filters plus an "any / all" toggle
+Detail View (/pokemon/:id)
+
+Image, height, weight, base EXP, abilities, stats and sprites
+Previous / Next that follow the current list or gallery order and wrap around
+Required tools: React Router, TypeScript, Axios
+
+I haven't written any code yet. Do you want to start with the data layer, or with one of the views?
+
+Log 2:
+
 User: (pasted PokeAPI notice) Sprites for the version group omega-ruby-alpha-sapphire will be moved from the path ../omegaruby-alphasapphire/.. to ../omega-ruby-alpha-sapphire/.. starting October 7th. — Has this been checked? Please make it fault-tolerant and compatible with both.
 
 Claude: (Searched the code, read sprites.ts, PokemonImage.tsx and pokemon.ts, and curl-tested both sprite paths: the old path returns 200, the new path returns 404, consistent with the notice.)
@@ -64,3 +146,28 @@ The large image on the left uses official-artwork, whose path is unrelated to th
 The small "Default" image uses the generic front_default, also unrelated.
 The list and gallery pages use those same two image types and never touch the ORAS path.
 If neither ORAS path loads, the red-box image becomes a "?" placeholder. If neither key has a front_default in the API, the whole block is hidden and only the "Default" image remains.
+
+Log 3: 
+User: (Selected "Is the gallery composed of item media? (4 points)" in README.md.) What does this mean?
+
+Claude: This is the first item under Gallery View in the grading breakdown, worth 4 points. It asks whether the gallery displays media (images) for each item, not just a text list. Line 38 of the README requires the gallery to show image media from the chosen API, such as movie posters or Pokemon sprites. A grader will open the Gallery page and check that it is a grid of images from your API's items. The next item (8 points), "Does clicking on a filter change results accordingly?", is a separate requirement: the gallery needs a filter, such as genre or type, and the displayed images must change when the user selects it.
+
+User: (Selected "Does clicking on a filter change results accordingly?" in README.md.) Check whether everything in the grading breakdown is satisfied.
+
+Claude: (Read App.tsx, ListView.tsx, GalleryView.tsx, DetailView.tsx, PokemonProvider.tsx, api/pokemon.ts, main.tsx and vite.config.ts, and ran tsc -b and eslint, both without errors.) Every grading item has a matching implementation in the code.
+
+List View: ListView.tsx shows the first 151 Pokemon, filters by name or number as you type, offers 8 sort properties (ID, Name, Height, Weight, Base EXP, HP, Attack, Speed), and has a button that toggles ascending and descending order.
+Gallery View: GalleryView.tsx shows official artwork for each Pokemon, falling back to the default sprite. It has 18 multi-select type filters plus an "any / all" match toggle, and the grid updates immediately.
+Details View: Items in both the list and the gallery link to /pokemon/:id. The page shows height, weight, base EXP, abilities, stats and sprites. Previous and Next follow the current list or gallery order and wrap around. Opening the URL directly falls back to the full 151-Pokemon order.
+Other: React Router, TypeScript and Axios are all used. Design is subjective, but the code has loading, error-with-retry and empty states and uses CSS Modules.
+
+Two things to watch. vite.config.ts hardcodes base: '/mp2/', so the repository name must match. Data is cached in localStorage, so the first load makes about 151 requests. I only read the code and did not run the page in a browser.
+
+User: Where can I find the actual repository name?
+
+Claude: (Ran git remote -v.) The remote is https://github.com/userYT/mp2.git, so the repository name is mp2. That matches base: '/mp2/' in vite.config.ts, so nothing needs to change. The deployed site will be at https://useryt.github.io/mp2/. You can also find the name by running git remote -v, reading the last segment of the repository URL on GitHub, or checking Settings → Pages. If the repository is ever renamed, base must be updated too, or the page will be blank.
+
+User: So is everything fine now?
+
+Claude: Yes. By the grading breakdown, every item is implemented, the required tools are used, tsc and eslint pass, and the base path matches the repository name. Two caveats: I only read the code and did not click through the app, so run npm run dev and try search, sort, gallery filters and Previous/Next at http://localhost:5173/mp2/ before submitting. Design is subjective, so I can't guarantee those 10 points. I also haven't checked the README's submission requirements beyond the grading items, such as the deployment link and llm_logs.csv.
+

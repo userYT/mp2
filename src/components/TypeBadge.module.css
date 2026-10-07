@@ -1,9 +1,11 @@
 .badge {
   display: inline-block;
-  padding: 0 0.7rem;
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  padding: 0.1rem 0.85rem;
+  background: var(--blue-soft);
+  color: var(--blue);
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: capitalize;
 }

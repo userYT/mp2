@@ -11,6 +11,8 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  border: 1px dashed var(--line);
+  border: 2px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--hover);
   color: var(--muted);
 }
