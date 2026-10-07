@@ -60,9 +60,15 @@ export default function GalleryView() {
 
   return (
     <section>
-      <h1 className={styles.title}>Gallery</h1>
-
       <div className={styles.filters}>
+        <button
+          type="button"
+          className={`btn ${styles.chip}`}
+          aria-pressed={selected.length === 0}
+          onClick={() => setSelected([])}
+        >
+          All
+        </button>
         {ALL_TYPES.map((type) => (
           <button
             key={type}
@@ -84,14 +90,6 @@ export default function GalleryView() {
         >
           Match: {mode === 'any' ? 'any selected type' : 'all selected types'}
         </button>
-        <button
-          type="button"
-          className="btn"
-          onClick={() => setSelected([])}
-          disabled={selected.length === 0}
-        >
-          Clear filters
-        </button>
         <span className={styles.count}>
           {visible.length} of {pokemon.length}
         </span>
@@ -107,6 +105,7 @@ export default function GalleryView() {
                 to={`/pokemon/${p.id}`}
                 state={{ from: '/gallery' }}
                 className={styles.card}
+                title={`${displayName(p.name)} ${formatId(p.id)}`}
               >
                 <div className={styles.media}>
                   <PokemonImage

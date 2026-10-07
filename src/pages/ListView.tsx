@@ -79,49 +79,67 @@ export default function ListView() {
   if (loading) return <StatusMessage kind="loading" message="Loading Pokemon..." />
   if (error) return <StatusMessage kind="error" message={error} onRetry={reload} />
 
-  return (
-    <section>
-      <h1 className={styles.title}>List</h1>
+  const searching = query.trim() !== ''
 
-      <div className={styles.controls}>
+  return (
+    <section className={searching ? styles.page : `${styles.page} ${styles.idle}`}>
+      <div className={styles.panel}>
         <input
           type="search"
           className={`field ${styles.search}`}
-          placeholder="Search by name or number"
+          placeholder="Search for Pokemon"
           aria-label="Search Pokemon"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <label className={styles.sortLabel}>
-          Sort by
-          <select
-            className="field"
-            value={sortKey}
-            onChange={(e) => setSortKey(e.target.value as SortKey)}
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.key} value={o.key}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+        <label className={styles.sortLabel} htmlFor="sort-key">
+          Sort by:
         </label>
-        <button
-          type="button"
-          className="btn"
-          onClick={() => setOrder((o) => (o === 'asc' ? 'desc' : 'asc'))}
+        <select
+          id="sort-key"
+          className={`field ${styles.select}`}
+          value={sortKey}
+          onChange={(e) => setSortKey(e.target.value as SortKey)}
         >
-          {order === 'asc' ? '↑ Ascending' : '↓ Descending'}
-        </button>
+          {SORT_OPTIONS.map((o) => (
+            <option key={o.key} value={o.key}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <div className={styles.order} role="radiogroup" aria-label="Sort order">
+          <label className={styles.radio}>
+            <input
+              type="radio"
+              name="order"
+              value="asc"
+              checked={order === 'asc'}
+              onChange={() => setOrder('asc')}
+            />
+            ascending
+          </label>
+          <label className={styles.radio}>
+            <input
+              type="radio"
+              name="order"
+              value="desc"
+              checked={order === 'desc'}
+              onChange={() => setOrder('desc')}
+            />
+            descending
+          </label>
+        </div>
       </div>
 
-      <p className={styles.count}>
-        {visible.length} of {pokemon.length}
-      </p>
+      {searching && (
+        <p className={styles.count}>
+          {visible.length} of {pokemon.length}
+        </p>
+      )}
 
-      {visible.length === 0 ? (
+      {searching && visible.length === 0 ? (
         <StatusMessage kind="empty" message="No Pokemon match your search." />
-      ) : (
+      ) : searching ? (
         <ul className={styles.list}>
           {visible.map((p) => (
             <li key={p.id}>
@@ -133,23 +151,25 @@ export default function ListView() {
                 <div className={styles.thumb}>
                   <PokemonImage src={p.sprites.front} alt={displayName(p.name)} />
                 </div>
-                <span className={styles.id}>{formatId(p.id)}</span>
-                <span className={styles.name}>{displayName(p.name)}</span>
-                <span className={styles.types}>
-                  {p.types.map((t) => (
-                    <TypeBadge key={t} type={t} />
-                  ))}
-                </span>
-                <span className={styles.facts}>
-                  <span>{formatMeters(p.height)}</span>
-                  <span>{formatKg(p.weight)}</span>
-                  <span>HP {p.stats.hp}</span>
-                </span>
+                <div className={styles.info}>
+                  <span className={styles.name}>{displayName(p.name)}</span>
+                  <span className={styles.facts}>
+                    <span>{formatId(p.id)}</span>
+                    <span>{formatMeters(p.height)}</span>
+                    <span>{formatKg(p.weight)}</span>
+                    <span>HP {p.stats.hp}</span>
+                  </span>
+                  <span className={styles.types}>
+                    {p.types.map((t) => (
+                      <TypeBadge key={t} type={t} />
+                    ))}
+                  </span>
+                </div>
               </Link>
             </li>
           ))}
         </ul>
-      )}
+      ) : null}
     </section>
   )
 }

@@ -38,17 +38,38 @@ export default function DetailView() {
   const name = displayName(current.name)
 
   return (
-    <section>
+    <section className={styles.panel}>
       <div className={styles.nav}>
-        <Link to={`/pokemon/${prevId}`} state={location.state} className="btn">
-          ← Previous
+        <Link
+          to={`/pokemon/${prevId}`}
+          state={location.state}
+          className={`btn ${styles.arrow}`}
+          aria-label="Previous Pokemon"
+        >
+          &lt;
         </Link>
         <Link to={from} className="btn">
           Back
         </Link>
-        <Link to={`/pokemon/${nextId}`} state={location.state} className="btn">
-          Next →
+        <Link
+          to={`/pokemon/${nextId}`}
+          state={location.state}
+          className={`btn ${styles.arrow}`}
+          aria-label="Next Pokemon"
+        >
+          &gt;
         </Link>
+      </div>
+
+      <div className={styles.heading}>
+        <h1 className={styles.name}>{name}</h1>
+        <span className={styles.id}>{formatId(current.id)}</span>
+      </div>
+
+      <div className={styles.types}>
+        {current.types.map((t) => (
+          <TypeBadge key={t} type={t} />
+        ))}
       </div>
 
       <div className={styles.layout}>
@@ -61,17 +82,6 @@ export default function DetailView() {
         </div>
 
         <div>
-          <div className={styles.heading}>
-            <h1 className={styles.name}>{name}</h1>
-            <span className={styles.id}>{formatId(current.id)}</span>
-          </div>
-
-          <div className={styles.types}>
-            {current.types.map((t) => (
-              <TypeBadge key={t} type={t} />
-            ))}
-          </div>
-
           <dl className={styles.facts}>
             <div className={styles.fact}>
               <dt>Height</dt>
